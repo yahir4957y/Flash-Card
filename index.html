@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aplicación de FlashCards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #18b699, #cc9999);
+            overflow: auto;
+            padding: 20px;
+        }
+        .customization {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            width: 350px;
+            max-width: 90%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .customization label {
+            font-weight: bold;
+            color: #333;
+        }
+        .customization select, .customization input[type="color"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .flashcard-container {
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+        .flashcard {
+            width: 350px;
+            height: 220px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 20px;
+            text-align: center;
+            color: white;
+        }
+        .flashcard-front {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .flashcard-back {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            transform: rotateY(180deg);
+            font-size: 18px;
+            line-height: 1.4;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            transition: transform 0.2s, background 0.3s;
+        }
+        button:hover {
+            background: linear-gradient(45deg, #e55a5a, #e07b46);
+            transform: scale(1.05);
+        }
+        @media (max-width: 400px) {
+            .flashcard {
+                width: 280px;
+                height: 180px;
+                font-size: 16px;
+            }
+            .flashcard-back {
+                font-size: 14px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .customization {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="customization">
+        <label for="frontColor">Color de la cara frontal:</label>
+        <input type="color" id="frontColor" value="#ff6b6b" />
+        <label for="backColor">Color de la cara trasera:</label>
+        <input type="color" id="backColor" value="#4facfe" />
+        <label for="shape">Forma de la tarjeta:</label>
+        <select id="shape">
+            <option value="15px">Rectángulo redondeado</option>
+            <option value="0px">Rectángulo</option>
+            <option value="50%">Círculo</option>
+            <option value="10px 50px 10px 50px">Esquina alternada</option>
+            <option value="30px 10px 30px 10px">Onda suave</option>
+            <option value="50px 0px 50px 0px">Pétalo</option>
+        </select>
+    </div>
+    <div class="flashcard-container">
+        <div class="flashcard" id="flashcard">
+            <div class="flashcard-front" id="front">HTML</div>
+            <div class="flashcard-back" id="back">Lenguaje de Marcado de Hipertexto: Lenguaje estándar para estructurar contenido en la web usando elementos como encabezados, párrafos y enlaces.</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="prevCard()">Anterior</button>
+        <button onclick="nextCard()">Siguiente</button>
+    </div>
+
+    <script>
+        const cards = [
+            {
+                front: "HTML",
+                back: "Lenguaje de Marcado de Hipertexto: Lenguaje estándar para estructurar contenido en la web usando elementos como encabezados, párrafos y enlaces."
+            },
+            {
+                front: "CSS",
+                back: "Hojas de Estilo en Cascada: Lenguaje para diseñar la presentación de páginas web, controlando colores, fuentes y diseño."
+            },
+            {
+                front: "JavaScript",
+                back: "Lenguaje de programación que permite crear contenido interactivo y dinámico en páginas web, como animaciones y validaciones."
+            }
+        ];
+        let currentCard = 0;
+        let isFlipped = false;
+
+        const flashcard = document.getElementById('flashcard');
+        const front = document.getElementById('front');
+        const back = document.getElementById('back');
+        const frontColor = document.getElementById('frontColor');
+        const backColor = document.getElementById('backColor');
+        const shapeSelect = document.getElementById('shape');
+
+        function updateCard() {
+            front.textContent = cards[currentCard].front;
+            back.textContent = cards[currentCard].back;
+            flashcard.classList.remove('flipped');
+            isFlipped = false;
+            updateStyles();
+        }
+
+        function flipCard() {
+            flashcard.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            currentCard = (currentCard + 1) % cards.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentCard = (currentCard - 1 + cards.length) % cards.length;
+            updateCard();
+        }
+
+        function updateStyles() {
+            const frontCol = frontColor.value;
+            const backCol = backColor.value;
+            const borderRadius = shapeSelect.value;
+
+            // Apply colors
+            front.style.background = `linear-gradient(45deg, ${frontCol}, ${adjustColor(frontCol, 20)})`;
+            back.style.background = `linear-gradient(45deg, ${backCol}, ${adjustColor(backCol, 20)})`;
+
+            // Apply border-radius to flashcard and its faces
+            flashcard.style.borderRadius = borderRadius;
+            front.style.borderRadius = borderRadius;
+            back.style.borderRadius = borderRadius;
+
+            // Aquí se eliminó la línea que sobreescribía la rotación para que la clase flipped funcione correctamente
+            // flashcard.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+        }
+
+        function adjustColor(color, percent) {
+            const num = parseInt(color.slice(1), 16);
+            const r = Math.min(255, Math.round(((num >> 16) & 255) * (1 + percent / 100)));
+            const g = Math.min(255, Math.round(((num >> 8) & 255) * (1 + percent / 100)));
+            const b = Math.min(255, Math.round((num & 255) * (1 + percent / 100)));
+            return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).padStart(6, '0')}`;
+        }
+
+        flashcard.addEventListener('click', flipCard);
+        frontColor.addEventListener('input', updateStyles);
+        backColor.addEventListener('input', updateStyles);
+        shapeSelect.addEventListener('change', updateStyles);
+
+        updateCard();
+    </script>
+</body>
+</html>
